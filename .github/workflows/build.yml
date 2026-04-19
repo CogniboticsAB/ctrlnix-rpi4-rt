@@ -1,0 +1,49 @@
+name: Build RT Kernel and EtherCAT for RPi4
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    # Rebuild weekly to pick up nixpkgs security updates
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on native ARM64
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: cognibotics
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Build RT kernel
+        run: |
+          nix build .#packages.aarch64-linux.kernel \
+            --no-link --print-out-paths \
+            | cachix push cognibotics
+
+      - name: Build EtherCAT kernel module
+        run: |
+          nix build .#packages.aarch64-linux.ethercat-kmod \
+            --no-link --print-out-paths \
+            | cachix push cognibotics
+
+      - name: Build EtherCAT userspace tools
+        run: |
+          nix build .#packages.aarch64-linux.ethercat-userspace \
+            --no-link --print-out-paths \
+            | cachix push cognibotics
