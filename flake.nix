@@ -13,10 +13,19 @@
     # - DRM_I915_GVT / DRM_I915_GVT_KVMGT are absent from both 6.12
     #   and 6.18 kernels but present in the nixpkgs base config; mark
     #   them as unset to suppress build errors on both versions.
+    # - NO_HZ_FULL / RCU_NOCB_CPU / RCU_EXPERT are enabled to allow true
+    #   core isolation, making cores tickless and offloading RCU callbacks
+    #   to prevent system stalls when an isolated core is at 100% utilization.
     rtKernelConfig = with lib.kernel; {
       PREEMPT_RT         = yes;
       PREEMPT            = lib.mkForce no;
       RCU_BOOST          = yes;
+
+      # Enable true isolation support (tickless + RCU offloading)
+      NO_HZ_FULL         = yes;
+      RCU_NOCB_CPU       = yes;
+      RCU_EXPERT         = yes;
+
       DRM_I915_GVT       = lib.mkForce (option no);
       DRM_I915_GVT_KVMGT = lib.mkForce (option no);
     };
