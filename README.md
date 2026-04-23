@@ -1,8 +1,8 @@
 # ctrlnix-rt
 
-PREEMPT_RT kernel 6.18 LTS and EtherCAT IGH master for NixOS — supports both `aarch64-linux` (Raspberry Pi 4) and `x86_64-linux`.
+PREEMPT_RT kernels and EtherCAT IGH master for NixOS — supports `aarch64-linux` (Raspberry Pi 4) and `x86_64-linux`.
 
-Linux 6.18+ has PREEMPT_RT merged into mainline — no external patch needed.
+Linux 6.12+ has PREEMPT_RT merged into mainline — no external patch needed.
 
 ## Binary Cache
 
@@ -41,15 +41,20 @@ Add this flake as an input to your NixOS configuration:
         {
           nixpkgs.overlays = [ rt.overlays.default ];
 
-          # aarch64 (RPi4):
-          boot.kernelPackages      = pkgs.linuxPackages-rt-rpi4;
-          boot.extraModulePackages = [ pkgs.ethercat-kmod-rpi4 ];
-          environment.systemPackages = [ pkgs.ethercat-userspace-rpi4 ];
+          # aarch64 (RPi4, 6.12):
+          boot.kernelPackages      = pkgs.linuxPackages-rt-rpi4-612;
+          boot.extraModulePackages = [ pkgs.ethercat-kmod-rpi4-612 ];
+          environment.systemPackages = [ pkgs.ethercat-userspace-rpi4-612 ];
 
-          # x86_64:
-          # boot.kernelPackages      = pkgs.linuxPackages-rt-x86;
-          # boot.extraModulePackages = [ pkgs.ethercat-kmod-x86 ];
-          # environment.systemPackages = [ pkgs.ethercat-userspace-x86 ];
+          # x86_64 (6.12):
+          # boot.kernelPackages      = pkgs.linuxPackages-rt-x86-612;
+          # boot.extraModulePackages = [ pkgs.ethercat-kmod-x86-612 ];
+          # environment.systemPackages = [ pkgs.ethercat-userspace-x86-612 ];
+
+          # x86_64 (6.18):
+          # boot.kernelPackages      = pkgs.linuxPackages-rt-x86-618;
+          # boot.extraModulePackages = [ pkgs.ethercat-kmod-x86-618 ];
+          # environment.systemPackages = [ pkgs.ethercat-userspace-x86-618 ];
         }
       ];
     };
@@ -59,20 +64,27 @@ Add this flake as an input to your NixOS configuration:
 
 ## Packages
 
-| Package | aarch64 name | x86_64 name | Description |
-|---------|-------------|-------------|-------------|
-| RT Kernel | `linuxPackages-rt-rpi4` | `linuxPackages-rt-x86` | Linux 6.18 LTS with `PREEMPT_RT` |
-| EtherCAT kmod | `ethercat-kmod-rpi4` | `ethercat-kmod-x86` | IgH EtherCAT master 1.6.9 kernel module |
-| EtherCAT userspace | `ethercat-userspace-rpi4` | `ethercat-userspace-x86` | IgH EtherCAT userspace tools (`ethercat` CLI) |
+| Package | Description |
+|---------|-------------|
+| `linuxPackages-rt-rpi4-612` | RPi4 kernel 6.12 with `PREEMPT_RT` |
+| `ethercat-kmod-rpi4-612` | IgH EtherCAT master 1.6.9 kernel module (RPi4, 6.12) |
+| `ethercat-userspace-rpi4-612` | IgH EtherCAT userspace tools (RPi4, 6.12) |
+| `linuxPackages-rt-x86-612` | x86_64 kernel 6.12 with `PREEMPT_RT` |
+| `ethercat-kmod-x86-612` | IgH EtherCAT master 1.6.9 kernel module (x86, 6.12) |
+| `ethercat-userspace-x86-612` | IgH EtherCAT userspace tools (x86, 6.12) |
+| `linuxPackages-rt-x86-618` | x86_64 kernel 6.18 with `PREEMPT_RT` |
+| `ethercat-kmod-x86-618` | IgH EtherCAT master 1.6.9 kernel module (x86, 6.18) |
+| `ethercat-userspace-x86-618` | IgH EtherCAT userspace tools (x86, 6.18) |
 
 ## Kernel configuration
 
-Applied to both architectures:
+Applied to all three kernels:
 
 - `PREEMPT_RT=yes` — full real-time preemption
 - `PREEMPT=no` — disabled (replaced by PREEMPT_RT)
-- `PREEMPT_VOLUNTARY=no` — disabled (replaced by PREEMPT_RT)
 - `RCU_BOOST=yes` — RCU priority boosting for RT tasks
+
+`PREEMPT_VOLUNTARY` is intentionally not set: it exists in 6.12 but was removed in 6.18, so omitting it keeps the config compatible with both versions.
 
 ## EtherCAT
 
