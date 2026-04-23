@@ -1,5 +1,8 @@
 name: Build RT Kernel and EtherCAT (aarch64 + x86_64)
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches: [ master ]
