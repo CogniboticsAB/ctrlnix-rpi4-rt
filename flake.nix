@@ -39,7 +39,8 @@
     };
 
     # ─── Helper: build EtherCAT kmod against a kernel package set ─────
-    mkEthercatKmod = linuxPackages: pkgs:
+    # extraFlags: list of additional configure flags, e.g. [ "--enable-bcmgenet" ]
+    mkEthercatKmod = linuxPackages: pkgs: extraFlags:
       linuxPackages.callPackage
         ({ stdenv, fetchFromGitLab, kernel, automake, autoconf, libtool, pkgconf }:
         stdenv.mkDerivation {
@@ -52,7 +53,7 @@
           configureFlags = [
             "--enable-generic"
             "--with-linux-dir=${kernel.dev}/lib/modules/${kernel.modDirVersion}/build"
-          ];
+          ] ++ extraFlags;
           buildPhase = ''
             make
             make -C "${kernel.dev}/lib/modules/${kernel.modDirVersion}/build" \
@@ -118,7 +119,7 @@
     packages."aarch64-linux" = {
       # RPi4 kernel 6.12 with PREEMPT_RT
       kernel-rpi4-612             = linuxPackages-rt-rpi4-612.kernel;
-      ethercat-kmod-rpi4-612      = mkEthercatKmod linuxPackages-rt-rpi4-612 pkgs-aarch64;
+      ethercat-kmod-rpi4-612      = mkEthercatKmod linuxPackages-rt-rpi4-612 pkgs-aarch64 [ "--enable-bcmgenet" ];
       ethercat-userspace-rpi4-612 = mkEthercatUserspace linuxPackages-rt-rpi4-612 pkgs-aarch64;
       default                     = linuxPackages-rt-rpi4-612.kernel;
     };
@@ -126,12 +127,12 @@
     packages."x86_64-linux" = {
       # x86 kernel 6.12 with PREEMPT_RT
       kernel-x86-612             = linuxPackages-rt-x86-612.kernel;
-      ethercat-kmod-x86-612      = mkEthercatKmod linuxPackages-rt-x86-612 pkgs-x86;
+      ethercat-kmod-x86-612      = mkEthercatKmod linuxPackages-rt-x86-612 pkgs-x86 [];
       ethercat-userspace-x86-612 = mkEthercatUserspace linuxPackages-rt-x86-612 pkgs-x86;
 
       # x86 kernel 6.18 with PREEMPT_RT
       kernel-x86-618             = linuxPackages-rt-x86-618.kernel;
-      ethercat-kmod-x86-618      = mkEthercatKmod linuxPackages-rt-x86-618 pkgs-x86;
+      ethercat-kmod-x86-618      = mkEthercatKmod linuxPackages-rt-x86-618 pkgs-x86 [];
       ethercat-userspace-x86-618 = mkEthercatUserspace linuxPackages-rt-x86-618 pkgs-x86;
 
       default = linuxPackages-rt-x86-618.kernel;
@@ -157,15 +158,15 @@
     #
     overlays.default = final: prev: {
       linuxPackages-rt-rpi4-612   = linuxPackages-rt-rpi4-612;
-      ethercat-kmod-rpi4-612      = mkEthercatKmod linuxPackages-rt-rpi4-612 prev;
+      ethercat-kmod-rpi4-612      = mkEthercatKmod linuxPackages-rt-rpi4-612 prev [ "--enable-bcmgenet" ];
       ethercat-userspace-rpi4-612 = mkEthercatUserspace linuxPackages-rt-rpi4-612 prev;
 
       linuxPackages-rt-x86-612    = linuxPackages-rt-x86-612;
-      ethercat-kmod-x86-612       = mkEthercatKmod linuxPackages-rt-x86-612 prev;
+      ethercat-kmod-x86-612       = mkEthercatKmod linuxPackages-rt-x86-612 prev [];
       ethercat-userspace-x86-612  = mkEthercatUserspace linuxPackages-rt-x86-612 prev;
 
       linuxPackages-rt-x86-618    = linuxPackages-rt-x86-618;
-      ethercat-kmod-x86-618       = mkEthercatKmod linuxPackages-rt-x86-618 prev;
+      ethercat-kmod-x86-618       = mkEthercatKmod linuxPackages-rt-x86-618 prev [];
       ethercat-userspace-x86-618  = mkEthercatUserspace linuxPackages-rt-x86-618 prev;
 
       # Generic aliases - used by ethercat.nix and jlt-packages.nix so they
@@ -176,8 +177,8 @@
                            then linuxPackages-rt-rpi4-612
                            else linuxPackages-rt-x86-618;
       ethercat-kmod      = if prev.system == "aarch64-linux"
-                           then mkEthercatKmod linuxPackages-rt-rpi4-612 prev
-                           else mkEthercatKmod linuxPackages-rt-x86-618  prev;
+                           then mkEthercatKmod linuxPackages-rt-rpi4-612 prev [ "--enable-bcmgenet" ]
+                           else mkEthercatKmod linuxPackages-rt-x86-618  prev [];
       ethercat-userspace = if prev.system == "aarch64-linux"
                            then mkEthercatUserspace linuxPackages-rt-rpi4-612 prev
                            else mkEthercatUserspace linuxPackages-rt-x86-618  prev;
