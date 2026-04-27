@@ -89,21 +89,3 @@ jobs:
           nix build .#packages.x86_64-linux.ethercat-userspace-x86-612 \
             --no-link --print-out-paths \
             | cachix push cognibotics
-
-      - name: Build x86 6.18 RT kernel
-        run: |
-          nix build .#packages.x86_64-linux.kernel-x86-618 \
-            --no-link --print-out-paths \
-            | cachix push cognibotics
-
-      - name: Build x86 6.18 EtherCAT kernel module
-        run: |
-          nix build .#packages.x86_64-linux.ethercat-kmod-x86-618 \
-            --no-link --print-out-paths \
-            | cachix push cognibotics
-
-      - name: Build x86 6.18 EtherCAT userspace tools
-        run: |
-          nix build .#packages.x86_64-linux.ethercat-userspace-x86-618 \
-            --no-link --print-out-paths \
-            | cachix push cognibotics

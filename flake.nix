@@ -114,11 +114,14 @@
     });
 
     # ─── x86_64: vanilla kernel 6.18 ──────────────────────────────────
-    linuxPackages-rt-x86-618 = pkgs-x86.linuxPackages_6_18.extend (_: super: {
-      kernel = super.kernel.override {
-        structuredExtraConfig = rtKernelConfig;
-      };
-    });
+    # Disabled: bcmgenet driver not available for 6.18 in IgH 1.6.9.
+    # Re-enable once IgH adds 6.18 support for all drivers used here.
+    # linuxPackages-rt-x86-618 = pkgs-x86.linuxPackages_6_18.extend (_: super: {
+    #   kernel = super.kernel.override {
+    #     structuredExtraConfig = rtKernelConfig;
+    #   };
+    # });
+
 
   in {
     # ─── Packages ─────────────────────────────────────────────────────
@@ -136,12 +139,12 @@
       ethercat-kmod-x86-612      = mkEthercatKmod linuxPackages-rt-x86-612 pkgs-x86;
       ethercat-userspace-x86-612 = mkEthercatUserspace linuxPackages-rt-x86-612 pkgs-x86;
 
-      # x86 kernel 6.18 with PREEMPT_RT
-      kernel-x86-618             = linuxPackages-rt-x86-618.kernel;
-      ethercat-kmod-x86-618      = mkEthercatKmod linuxPackages-rt-x86-618 pkgs-x86;
-      ethercat-userspace-x86-618 = mkEthercatUserspace linuxPackages-rt-x86-618 pkgs-x86;
+      # x86 kernel 6.18 with PREEMPT_RT — disabled, see comment above
+      # kernel-x86-618             = linuxPackages-rt-x86-618.kernel;
+      # ethercat-kmod-x86-618      = mkEthercatKmod linuxPackages-rt-x86-618 pkgs-x86;
+      # ethercat-userspace-x86-618 = mkEthercatUserspace linuxPackages-rt-x86-618 pkgs-x86;
 
-      default = linuxPackages-rt-x86-618.kernel;
+      default = linuxPackages-rt-x86-612.kernel;
     };
 
     # ─── Overlay ──────────────────────────────────────────────────────
@@ -158,9 +161,7 @@
     #   boot.kernelPackages      = pkgs.linuxPackages-rt-x86-612;
     #   boot.extraModulePackages = [ pkgs.ethercat-kmod-x86-612 ];
     #
-    #   # x86_64 (6.18):
-    #   boot.kernelPackages      = pkgs.linuxPackages-rt-x86-618;
-    #   boot.extraModulePackages = [ pkgs.ethercat-kmod-x86-618 ];
+    #   # x86_64 (6.18): disabled — bcmgenet not available for 6.18 in IgH 1.6.9
     #
     overlays.default = final: prev: {
       linuxPackages-rt-rpi4-612   = linuxPackages-rt-rpi4-612;
@@ -171,23 +172,23 @@
       ethercat-kmod-x86-612       = mkEthercatKmod linuxPackages-rt-x86-612 prev;
       ethercat-userspace-x86-612  = mkEthercatUserspace linuxPackages-rt-x86-612 prev;
 
-      linuxPackages-rt-x86-618    = linuxPackages-rt-x86-618;
-      ethercat-kmod-x86-618       = mkEthercatKmod linuxPackages-rt-x86-618 prev;
-      ethercat-userspace-x86-618  = mkEthercatUserspace linuxPackages-rt-x86-618 prev;
+      # linuxPackages-rt-x86-618    = linuxPackages-rt-x86-618;   # disabled
+      # ethercat-kmod-x86-618       = ...;                         # disabled
+      # ethercat-userspace-x86-618  = ...;                         # disabled
 
       # Generic aliases - used by ethercat.nix and jlt-packages.nix so they
       # stay arch-agnostic. Points to the default kernel for each arch:
       #   aarch64 -> rpi4-612 (only option)
-      #   x86_64  -> x86-618  (latest)
+      #   x86_64  -> x86-612  (6.18 disabled until IgH adds full 6.18 support)
       linuxPackages-rt   = if prev.system == "aarch64-linux"
                            then linuxPackages-rt-rpi4-612
-                           else linuxPackages-rt-x86-618;
+                           else linuxPackages-rt-x86-612;
       ethercat-kmod      = if prev.system == "aarch64-linux"
                            then mkEthercatKmod linuxPackages-rt-rpi4-612 prev
-                           else mkEthercatKmod linuxPackages-rt-x86-618  prev;
+                           else mkEthercatKmod linuxPackages-rt-x86-612  prev;
       ethercat-userspace = if prev.system == "aarch64-linux"
                            then mkEthercatUserspace linuxPackages-rt-rpi4-612 prev
-                           else mkEthercatUserspace linuxPackages-rt-x86-618  prev;
+                           else mkEthercatUserspace linuxPackages-rt-x86-612  prev;
     };
   };
 }
