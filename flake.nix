@@ -39,12 +39,10 @@
     };
 
     # ─── Helper: build EtherCAT kmod against a kernel package set ─────
-    # Built with --enable-igb (Intel I210) for native driver support.
-    # --enable-bcmgenet (RPi4 onboard NIC) is not included — the bcmgenet-6.12
-    # driver has a compile error against kernel 6.12 due to a net_dim() API
-    # change (const struct dim_sample *). Upstream IgH bug, tracked at:
-    # https://gitlab.com/etherlab.org/ethercat/-/work_items/207
-    # RPi4 falls back to ec_generic until the upstream bug is fixed.
+    # Built with:
+    #   --enable-igb    native driver for Intel I210 NICs (CX IPC)
+    #   --enable-genet  native driver for RPi4 onboard GENET/bcmgenet NIC
+    #   --enable-ccat   native driver for Beckhoff CCAT FPGA (CX IPC)
     mkEthercatKmod = linuxPackages: pkgs:
       linuxPackages.callPackage
         ({ stdenv, fetchFromGitLab, kernel, automake, autoconf, libtool, pkgconf }:
@@ -58,9 +56,8 @@
           configureFlags = [
             "--enable-generic"
             "--enable-igb"
-            # TODO: add "--enable-bcmgenet" once IgH 1.7 is released and the
-            # bcmgenet-6.12-ethercat.c compile error is fixed (net_dim() API change).
-            # Upstream IgH bug: https://gitlab.com/etherlab.org/ethercat/-/work_items/207
+            "--enable-genet"
+            "--enable-ccat"
             "--with-linux-dir=${kernel.dev}/lib/modules/${kernel.modDirVersion}/build"
           ];
           buildPhase = ''
