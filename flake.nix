@@ -21,6 +21,8 @@
       PREEMPT            = lib.mkForce no;
       RCU_BOOST          = yes;
 
+      HZ_1000            = lib.mkForce yes;
+
       # Enable true isolation support (tickless + RCU offloading)
       NO_HZ_FULL         = yes;
       RCU_NOCB_CPU       = yes;
