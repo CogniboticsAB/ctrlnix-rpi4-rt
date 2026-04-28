@@ -19,6 +19,10 @@
     rtKernelConfig = with lib.kernel; {
       PREEMPT_RT         = yes;
       PREEMPT            = lib.mkForce no;
+
+      # Build bcmgenet as a module (not built-in) so it can be blacklisted
+      # on the RPi4, allowing ec_genet (IgH native driver) to claim the NIC.
+      BCMGENET           = lib.mkForce module;
       RCU_BOOST          = yes;
 
       # Enable true isolation support (tickless + RCU offloading)
