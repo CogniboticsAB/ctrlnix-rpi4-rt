@@ -20,8 +20,16 @@
       PREEMPT_RT         = yes;
       PREEMPT            = lib.mkForce no;
 
+      # 1000 Hz timer tick for 1ms scheduling resolution — essential for
+      # sub-millisecond EtherCAT cycle times. RPi4 base kernel defaults to
+      # HZ_250; x86 base kernel already defaults to HZ_1000.
+      HZ_250             = lib.mkForce no;
+      HZ_1000            = yes;
+
       # Build bcmgenet as a module (not built-in) so it can be blacklisted
       # on the RPi4, allowing ec_genet (IgH native driver) to claim the NIC.
+      # Note: ec_genet declares a soft dep on mdio-bcm-unimac (built-in on
+      # RPi4), so MDIO_BCM_UNIMAC does not need to be forced to module.
       BCMGENET           = lib.mkForce module;
       RCU_BOOST          = yes;
 
