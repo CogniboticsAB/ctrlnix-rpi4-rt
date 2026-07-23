@@ -101,14 +101,14 @@ environment.systemPackages = [ pkgs.ethercat-userspace-x86-612-16 ];
 Applied to all kernels:
 
 - `PREEMPT_RT=yes` — full real-time preemption
-- `PREEMPT=no` — disabled (superseded by PREEMPT_RT)
+- `PREEMPT=no`, `PREEMPT_VOLUNTARY=no`, `PREEMPT_LAZY=no` — all other members of
+  the preemption choice group are forced off (nixpkgs defaults to
+  `PREEMPT_VOLUNTARY` on 6.12 and `PREEMPT_LAZY` on 6.18+, which would conflict
+  with `PREEMPT_RT`)
 - `RCU_BOOST=yes` — RCU priority boosting for RT tasks
 - `NO_HZ_FULL=yes` — tickless operation on isolated cores
 - `RCU_NOCB_CPU=yes` — offload RCU callbacks off isolated cores
 - `RCU_EXPERT=yes` — required to enable the above RCU options
-
-`PREEMPT_VOLUNTARY` is intentionally not set: it exists in 6.12 but was removed in 6.18,
-so omitting it keeps the config compatible with both versions.
 
 ## EtherCAT
 

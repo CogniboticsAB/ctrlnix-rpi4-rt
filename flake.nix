@@ -8,8 +8,10 @@
 
     # ─── Shared RT kernel config (applied to all kernels) ────────────
     # Notes:
-    # - PREEMPT_VOLUNTARY is intentionally absent: valid in 6.12 but
-    #   removed in 6.18, so omitting it keeps the config compatible.
+    # - nixpkgs common-config prefers PREEMPT_VOLUNTARY (< 6.18) or
+    #   PREEMPT_LAZY (>= 6.18). Both are members of the same preemption
+    #   choice group as PREEMPT_RT, so they must be forced off (as
+    #   `option no`, since each exists only in some kernel versions).
     # - DRM_I915_GVT / DRM_I915_GVT_KVMGT are absent from both 6.12
     #   and 6.18 kernels but present in the nixpkgs base config; mark
     #   them as unset to suppress build errors on both versions.
@@ -19,6 +21,8 @@
     rtKernelConfig = with lib.kernel; {
       PREEMPT_RT         = yes;
       PREEMPT            = lib.mkForce no;
+      PREEMPT_VOLUNTARY  = lib.mkForce (option no);
+      PREEMPT_LAZY       = lib.mkForce (option no);
       RCU_BOOST          = yes;
 
       # Enable true isolation support (tickless + RCU offloading)
