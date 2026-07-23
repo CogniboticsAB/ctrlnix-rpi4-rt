@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-PREEMPT_RT kernels and IgH EtherCAT master 1.6.9 for NixOS — supports `aarch64-linux` (Raspberry Pi 4) and `x86_64-linux`.
+PREEMPT_RT kernels and IgH EtherCAT master 1.6.10 for NixOS — supports `aarch64-linux` (Raspberry Pi 4) and `x86_64-linux`.
 
 Linux 6.12+ has PREEMPT_RT merged into mainline — no external patch needed.
 
@@ -33,7 +33,7 @@ automatically — use them unless you need a specific kernel version.
 # flake.nix
 {
   inputs = {
-    nixpkgs.url    = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url    = "github:NixOS/nixpkgs/nixos-26.05";
     ctrlnix-rt.url = "github:CogniboticsAB/ctrlnix-rt";
   };
 
@@ -56,23 +56,20 @@ boot.extraModulePackages = [ pkgs.ethercat-kmod ];
 environment.systemPackages = [ pkgs.ethercat-userspace ];
 ```
 
-If you need a specific kernel version, use the named packages instead:
+If you need a specific kernel or EtherCAT version, use the named packages instead.
+Package names encode the kernel (`rpi4-612`, `x86-612`) and the EtherCAT minor
+series (`-16`; `-17` will be added once IgH releases 1.7):
 
 ```nix
-# aarch64 (RPi4, 6.12) — only option on aarch64
+# aarch64 (RPi4, 6.12, EtherCAT 1.6) — only option on aarch64
 boot.kernelPackages      = pkgs.linuxPackages-rt-rpi4-612;
-boot.extraModulePackages = [ pkgs.ethercat-kmod-rpi4-612 ];
-environment.systemPackages = [ pkgs.ethercat-userspace-rpi4-612 ];
+boot.extraModulePackages = [ pkgs.ethercat-kmod-rpi4-612-16 ];
+environment.systemPackages = [ pkgs.ethercat-userspace-rpi4-612-16 ];
 
-# x86_64 (6.12)
+# x86_64 (6.12, EtherCAT 1.6)
 boot.kernelPackages      = pkgs.linuxPackages-rt-x86-612;
-boot.extraModulePackages = [ pkgs.ethercat-kmod-x86-612 ];
-environment.systemPackages = [ pkgs.ethercat-userspace-x86-612 ];
-
-# x86_64 (6.18)
-boot.kernelPackages      = pkgs.linuxPackages-rt-x86-618;
-boot.extraModulePackages = [ pkgs.ethercat-kmod-x86-618 ];
-environment.systemPackages = [ pkgs.ethercat-userspace-x86-618 ];
+boot.extraModulePackages = [ pkgs.ethercat-kmod-x86-612-16 ];
+environment.systemPackages = [ pkgs.ethercat-userspace-x86-612-16 ];
 ```
 
 ## Packages
@@ -82,22 +79,22 @@ environment.systemPackages = [ pkgs.ethercat-userspace-x86-618 ];
 | Package | aarch64 resolves to | x86_64 resolves to |
 |---------|--------------------|--------------------|
 | `linuxPackages-rt` | `linuxPackages-rt-rpi4-612` | `linuxPackages-rt-x86-612` |
-| `ethercat-kmod` | `ethercat-kmod-rpi4-612` | `ethercat-kmod-x86-612` |
-| `ethercat-userspace` | `ethercat-userspace-rpi4-612` | `ethercat-userspace-x86-612` |
+| `ethercat-kmod` | `ethercat-kmod-rpi4-612-16` | `ethercat-kmod-x86-612-16` |
+| `ethercat-userspace` | `ethercat-userspace-rpi4-612-16` | `ethercat-userspace-x86-612-16` |
 
 ### Named packages
 
 | Package | Description |
 |---------|-------------|
 | `linuxPackages-rt-rpi4-612` | RPi4 kernel 6.12 with `PREEMPT_RT` |
-| `ethercat-kmod-rpi4-612` | IgH EtherCAT master kernel module (RPi4, 6.12) |
-| `ethercat-userspace-rpi4-612` | IgH EtherCAT userspace tools (RPi4, 6.12) |
+| `ethercat-kmod-rpi4-612-16` | IgH EtherCAT master 1.6 kernel module (RPi4, 6.12) |
+| `ethercat-userspace-rpi4-612-16` | IgH EtherCAT master 1.6 userspace tools (RPi4, 6.12) |
 | `linuxPackages-rt-x86-612` | x86_64 kernel 6.12 with `PREEMPT_RT` |
-| `ethercat-kmod-x86-612` | IgH EtherCAT master kernel module (x86, 6.12) |
-| `ethercat-userspace-x86-612` | IgH EtherCAT userspace tools (x86, 6.12) |
+| `ethercat-kmod-x86-612-16` | IgH EtherCAT master 1.6 kernel module (x86, 6.12) |
+| `ethercat-userspace-x86-612-16` | IgH EtherCAT master 1.6 userspace tools (x86, 6.12) |
 | `linuxPackages-rt-x86-618` | x86_64 kernel 6.18 with `PREEMPT_RT` *(disabled — no IgH 6.18 bcmgenet support yet)* |
-| `ethercat-kmod-x86-618` | IgH EtherCAT master kernel module (x86, 6.18) *(disabled)* |
-| `ethercat-userspace-x86-618` | IgH EtherCAT userspace tools (x86, 6.18) *(disabled)* |
+| `ethercat-kmod-x86-618-16` | IgH EtherCAT master 1.6 kernel module (x86, 6.18) *(disabled)* |
+| `ethercat-userspace-x86-618-16` | IgH EtherCAT master 1.6 userspace tools (x86, 6.18) *(disabled)* |
 
 ## Kernel configuration
 
@@ -115,7 +112,7 @@ so omitting it keeps the config compatible with both versions.
 
 ## EtherCAT
 
-IgH EtherCAT master 1.6.9 built against the RT kernel. Set your NIC MAC address in your
+IgH EtherCAT master 1.6.10 built against the RT kernel. Set your NIC MAC address in your
 host configuration:
 
 Supported drivers (select one per host):

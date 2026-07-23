@@ -39,15 +39,15 @@ jobs:
             --no-link --print-out-paths \
             | cachix push cognibotics
 
-      - name: Build RPi4 6.12 EtherCAT kernel module
+      - name: Build RPi4 6.12 EtherCAT 1.6 kernel module
         run: |
-          nix build .#packages.aarch64-linux.ethercat-kmod-rpi4-612 \
+          nix build .#packages.aarch64-linux.ethercat-kmod-rpi4-612-16 \
             --no-link --print-out-paths \
             | cachix push cognibotics
 
-      - name: Build RPi4 6.12 EtherCAT userspace tools
+      - name: Build RPi4 6.12 EtherCAT 1.6 userspace tools
         run: |
-          nix build .#packages.aarch64-linux.ethercat-userspace-rpi4-612 \
+          nix build .#packages.aarch64-linux.ethercat-userspace-rpi4-612-16 \
             --no-link --print-out-paths \
             | cachix push cognibotics
 
@@ -78,14 +78,14 @@ jobs:
             --no-link --print-out-paths \
             | cachix push cognibotics
 
-      - name: Build x86 6.12 EtherCAT kernel module
+      - name: Build x86 6.12 EtherCAT 1.6 kernel module
         run: |
-          nix build .#packages.x86_64-linux.ethercat-kmod-x86-612 \
+          nix build .#packages.x86_64-linux.ethercat-kmod-x86-612-16 \
             --no-link --print-out-paths \
             | cachix push cognibotics
 
-      - name: Build x86 6.12 EtherCAT userspace tools
+      - name: Build x86 6.12 EtherCAT 1.6 userspace tools
         run: |
-          nix build .#packages.x86_64-linux.ethercat-userspace-x86-612 \
+          nix build .#packages.x86_64-linux.ethercat-userspace-x86-612-16 \
             --no-link --print-out-paths \
             | cachix push cognibotics

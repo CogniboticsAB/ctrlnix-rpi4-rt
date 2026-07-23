@@ -1,7 +1,7 @@
 {
   description = "PREEMPT_RT kernels and EtherCAT IGH master for NixOS (aarch64 + x86_64)";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
   outputs = { self, nixpkgs }: let
     lib = nixpkgs.lib;
@@ -39,12 +39,19 @@
       HZ_1000            = lib.mkForce yes;
     });
 
-    # ─── EtherCAT IGH 1.6.9 source (shared by all builds) ────────────
-    ethercatSrc = {
-      owner = "etherlab.org";
-      repo  = "ethercat";
-      rev   = "b709e58147e65b5e3251b45f48c01ef33cc7366f";
-      hash  = "sha256-Msx0i1SAwlSMD3+vjGRNe36Yx9qdUYokVekGytZptqk=";
+    # ─── EtherCAT IGH sources (one entry per supported minor series) ──
+    # Package names carry the minor series as a "-16" / "-17" suffix.
+    # To add the 1.7 series once it is released:
+    #   1. Add an ethercat-17 entry here (tag rev + hash).
+    #   2. Add the corresponding "-17" package and overlay attributes below.
+    ethercat-16 = {
+      version = "1.6.10";
+      src = {
+        owner = "etherlab.org";
+        repo  = "ethercat";
+        rev   = "c4b4ac405f289d319751f551e12f43007a2612aa"; # tag 1.6.10
+        hash  = "sha256-ZlvlWSZz7oWMvl3XorS2lb4i33RRv8dBwOe2uLDeOjQ=";
+      };
     };
 
     # ─── Helper: build EtherCAT kmod against a kernel package set ─────
@@ -52,13 +59,13 @@
     #   --enable-igb    native driver for Intel I210 NICs (CX IPC)
     #   --enable-genet  native driver for RPi4 onboard GENET/bcmgenet NIC
     #   --enable-ccat   native driver for Beckhoff CCAT FPGA (CX IPC)
-    mkEthercatKmod = linuxPackages: pkgs:
+    mkEthercatKmod = ethercat: linuxPackages: pkgs:
       linuxPackages.callPackage
         ({ stdenv, fetchFromGitLab, kernel, automake, autoconf, libtool, pkgconf }:
         stdenv.mkDerivation {
           pname   = "ethercat-kmod";
-          version = "1.6.9";
-          src = fetchFromGitLab ethercatSrc;
+          version = ethercat.version;
+          src = fetchFromGitLab ethercat.src;
           nativeBuildInputs = [ automake autoconf libtool pkgconf ]
             ++ kernel.moduleBuildDependencies;
           preConfigure = "bash ./bootstrap";
@@ -82,11 +89,11 @@
         }) { fetchFromGitLab = pkgs.fetchFromGitLab; };
 
     # ─── Helper: build EtherCAT userspace tools ───────────────────────
-    mkEthercatUserspace = linuxPackages: pkgs:
+    mkEthercatUserspace = ethercat: linuxPackages: pkgs:
       pkgs.stdenv.mkDerivation {
         pname   = "ethercat-userspace";
-        version = "1.6.9";
-        src = pkgs.fetchFromGitLab ethercatSrc;
+        version = ethercat.version;
+        src = pkgs.fetchFromGitLab ethercat.src;
         nativeBuildInputs = with pkgs; [ automake autoconf libtool pkgconf ];
         preConfigure = "bash ./bootstrap";
         configureFlags = [
@@ -97,10 +104,10 @@
       };
 
     # ─── Helper: build a complete set of three packages for one kernel ─
-    mkKernelPackages = linuxPackages: pkgs: rec {
+    mkKernelPackages = ethercat: linuxPackages: pkgs: rec {
       kernel             = linuxPackages.kernel;
-      ethercat-kmod      = mkEthercatKmod linuxPackages pkgs;
-      ethercat-userspace = mkEthercatUserspace linuxPackages pkgs;
+      ethercat-kmod      = mkEthercatKmod ethercat linuxPackages pkgs;
+      ethercat-userspace = mkEthercatUserspace ethercat linuxPackages pkgs;
       default            = kernel;
     };
 
@@ -123,7 +130,7 @@
     });
 
     # ─── x86_64: vanilla kernel 6.18 ──────────────────────────────────
-    # Disabled: bcmgenet driver not available for 6.18 in IgH 1.6.9.
+    # Disabled: bcmgenet driver not available for 6.18 in IgH 1.6.x.
     # Re-enable once IgH adds 6.18 support for all drivers used here.
     # linuxPackages-rt-x86-618 = pkgs-x86.linuxPackages_6_18.extend (_: super: {
     #   kernel = super.kernel.override {
@@ -136,22 +143,22 @@
     # ─── Packages ─────────────────────────────────────────────────────
     packages."aarch64-linux" = {
       # RPi4 kernel 6.12 with PREEMPT_RT
-      kernel-rpi4-612             = linuxPackages-rt-rpi4-612.kernel;
-      ethercat-kmod-rpi4-612      = mkEthercatKmod linuxPackages-rt-rpi4-612 pkgs-aarch64;
-      ethercat-userspace-rpi4-612 = mkEthercatUserspace linuxPackages-rt-rpi4-612 pkgs-aarch64;
-      default                     = linuxPackages-rt-rpi4-612.kernel;
+      kernel-rpi4-612                = linuxPackages-rt-rpi4-612.kernel;
+      ethercat-kmod-rpi4-612-16      = mkEthercatKmod ethercat-16 linuxPackages-rt-rpi4-612 pkgs-aarch64;
+      ethercat-userspace-rpi4-612-16 = mkEthercatUserspace ethercat-16 linuxPackages-rt-rpi4-612 pkgs-aarch64;
+      default                        = linuxPackages-rt-rpi4-612.kernel;
     };
 
     packages."x86_64-linux" = {
       # x86 kernel 6.12 with PREEMPT_RT
-      kernel-x86-612             = linuxPackages-rt-x86-612.kernel;
-      ethercat-kmod-x86-612      = mkEthercatKmod linuxPackages-rt-x86-612 pkgs-x86;
-      ethercat-userspace-x86-612 = mkEthercatUserspace linuxPackages-rt-x86-612 pkgs-x86;
+      kernel-x86-612                = linuxPackages-rt-x86-612.kernel;
+      ethercat-kmod-x86-612-16      = mkEthercatKmod ethercat-16 linuxPackages-rt-x86-612 pkgs-x86;
+      ethercat-userspace-x86-612-16 = mkEthercatUserspace ethercat-16 linuxPackages-rt-x86-612 pkgs-x86;
 
       # x86 kernel 6.18 with PREEMPT_RT — disabled, see comment above
-      # kernel-x86-618             = linuxPackages-rt-x86-618.kernel;
-      # ethercat-kmod-x86-618      = mkEthercatKmod linuxPackages-rt-x86-618 pkgs-x86;
-      # ethercat-userspace-x86-618 = mkEthercatUserspace linuxPackages-rt-x86-618 pkgs-x86;
+      # kernel-x86-618                = linuxPackages-rt-x86-618.kernel;
+      # ethercat-kmod-x86-618-16      = mkEthercatKmod ethercat-16 linuxPackages-rt-x86-618 pkgs-x86;
+      # ethercat-userspace-x86-618-16 = mkEthercatUserspace ethercat-16 linuxPackages-rt-x86-618 pkgs-x86;
 
       default = linuxPackages-rt-x86-612.kernel;
     };
@@ -162,42 +169,43 @@
     #   inputs.rt.url = "github:YOUR_ORG/ctrlnix-rt";
     #   nixpkgs.overlays = [ inputs.rt.overlays.default ];
     #
-    #   # aarch64 (RPi4, 6.12):
+    #   # aarch64 (RPi4, 6.12, EtherCAT 1.6):
     #   boot.kernelPackages      = pkgs.linuxPackages-rt-rpi4-612;
-    #   boot.extraModulePackages = [ pkgs.ethercat-kmod-rpi4-612 ];
+    #   boot.extraModulePackages = [ pkgs.ethercat-kmod-rpi4-612-16 ];
     #
-    #   # x86_64 (6.12):
+    #   # x86_64 (6.12, EtherCAT 1.6):
     #   boot.kernelPackages      = pkgs.linuxPackages-rt-x86-612;
-    #   boot.extraModulePackages = [ pkgs.ethercat-kmod-x86-612 ];
+    #   boot.extraModulePackages = [ pkgs.ethercat-kmod-x86-612-16 ];
     #
-    #   # x86_64 (6.18): disabled — bcmgenet not available for 6.18 in IgH 1.6.9
+    #   # x86_64 (6.18): disabled — bcmgenet not available for 6.18 in IgH 1.6.x
     #
     overlays.default = final: prev: {
-      linuxPackages-rt-rpi4-612   = linuxPackages-rt-rpi4-612;
-      ethercat-kmod-rpi4-612      = mkEthercatKmod linuxPackages-rt-rpi4-612 prev;
-      ethercat-userspace-rpi4-612 = mkEthercatUserspace linuxPackages-rt-rpi4-612 prev;
+      linuxPackages-rt-rpi4-612      = linuxPackages-rt-rpi4-612;
+      ethercat-kmod-rpi4-612-16      = mkEthercatKmod ethercat-16 linuxPackages-rt-rpi4-612 prev;
+      ethercat-userspace-rpi4-612-16 = mkEthercatUserspace ethercat-16 linuxPackages-rt-rpi4-612 prev;
 
-      linuxPackages-rt-x86-612    = linuxPackages-rt-x86-612;
-      ethercat-kmod-x86-612       = mkEthercatKmod linuxPackages-rt-x86-612 prev;
-      ethercat-userspace-x86-612  = mkEthercatUserspace linuxPackages-rt-x86-612 prev;
+      linuxPackages-rt-x86-612       = linuxPackages-rt-x86-612;
+      ethercat-kmod-x86-612-16       = mkEthercatKmod ethercat-16 linuxPackages-rt-x86-612 prev;
+      ethercat-userspace-x86-612-16  = mkEthercatUserspace ethercat-16 linuxPackages-rt-x86-612 prev;
 
-      # linuxPackages-rt-x86-618    = linuxPackages-rt-x86-618;   # disabled
-      # ethercat-kmod-x86-618       = ...;                         # disabled
-      # ethercat-userspace-x86-618  = ...;                         # disabled
+      # linuxPackages-rt-x86-618       = linuxPackages-rt-x86-618;   # disabled
+      # ethercat-kmod-x86-618-16       = ...;                         # disabled
+      # ethercat-userspace-x86-618-16  = ...;                         # disabled
 
       # Generic aliases - used by ethercat.nix and jlt-packages.nix so they
-      # stay arch-agnostic. Points to the default kernel for each arch:
+      # stay arch-agnostic. Points to the default kernel for each arch and
+      # the default EtherCAT series (1.6):
       #   aarch64 -> rpi4-612 (only option)
       #   x86_64  -> x86-612  (6.18 disabled until IgH adds full 6.18 support)
       linuxPackages-rt   = if prev.system == "aarch64-linux"
                            then linuxPackages-rt-rpi4-612
                            else linuxPackages-rt-x86-612;
       ethercat-kmod      = if prev.system == "aarch64-linux"
-                           then mkEthercatKmod linuxPackages-rt-rpi4-612 prev
-                           else mkEthercatKmod linuxPackages-rt-x86-612  prev;
+                           then mkEthercatKmod ethercat-16 linuxPackages-rt-rpi4-612 prev
+                           else mkEthercatKmod ethercat-16 linuxPackages-rt-x86-612  prev;
       ethercat-userspace = if prev.system == "aarch64-linux"
-                           then mkEthercatUserspace linuxPackages-rt-rpi4-612 prev
-                           else mkEthercatUserspace linuxPackages-rt-x86-612  prev;
+                           then mkEthercatUserspace ethercat-16 linuxPackages-rt-rpi4-612 prev
+                           else mkEthercatUserspace ethercat-16 linuxPackages-rt-x86-612  prev;
     };
   };
 }
