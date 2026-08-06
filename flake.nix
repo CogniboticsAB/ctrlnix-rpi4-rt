@@ -118,6 +118,12 @@
     # ─── aarch64: RPi4 kernel 6.12 ────────────────────────────────────
     pkgs-aarch64 = nixpkgs.legacyPackages."aarch64-linux";
 
+    # TODO: linuxPackages_rpi4 is deprecated in nixpkgs ("linux-rpi series will
+    # be removed in a future release. Please change to use nixos-hardware.") and
+    # emits an eval warning on every instantiation. Migration is blocked: the
+    # nixos-hardware RPi kernel is 6.18, for which IgH 1.6.x has no bcmgenet
+    # driver (same blocker as linuxPackages-rt-x86-618 below). Revisit once IgH
+    # supports 6.18.
     linuxPackages-rt-rpi4-612 = pkgs-aarch64.linuxPackages_rpi4.extend (_: super: {
       kernel = super.kernel.override {
         structuredExtraConfig = rpi4KernelConfig;
@@ -201,13 +207,13 @@
       # the default EtherCAT series (1.6):
       #   aarch64 -> rpi4-612 (only option)
       #   x86_64  -> x86-612  (6.18 disabled until IgH adds full 6.18 support)
-      linuxPackages-rt   = if prev.system == "aarch64-linux"
+      linuxPackages-rt   = if prev.stdenv.hostPlatform.system == "aarch64-linux"
                            then linuxPackages-rt-rpi4-612
                            else linuxPackages-rt-x86-612;
-      ethercat-kmod      = if prev.system == "aarch64-linux"
+      ethercat-kmod      = if prev.stdenv.hostPlatform.system == "aarch64-linux"
                            then mkEthercatKmod ethercat-16 linuxPackages-rt-rpi4-612 prev
                            else mkEthercatKmod ethercat-16 linuxPackages-rt-x86-612  prev;
-      ethercat-userspace = if prev.system == "aarch64-linux"
+      ethercat-userspace = if prev.stdenv.hostPlatform.system == "aarch64-linux"
                            then mkEthercatUserspace ethercat-16 linuxPackages-rt-rpi4-612 prev
                            else mkEthercatUserspace ethercat-16 linuxPackages-rt-x86-612  prev;
     };
